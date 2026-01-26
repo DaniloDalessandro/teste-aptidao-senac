@@ -3,7 +3,10 @@
     "allow": [
       "Bash(npx shadcn@latest add button card input label checkbox separator -y)",
       "Bash(npm install:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git rm:*)",
+      "Bash(git add:*)"
     ]
   }
 }
