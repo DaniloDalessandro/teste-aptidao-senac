@@ -35,13 +35,19 @@ class MessageCreateSerializer(serializers.Serializer):
 
 class ChatSerializer(serializers.ModelSerializer):
     """Serializer completo do Chat com mensagens."""
-    messages = MessageSerializer(many=True, read_only=True)
-    job = JobListSerializer(read_only=True)
+    messages = serializers.SerializerMethodField()
+    job = JobListSerializer(read_only=True, allow_null=True)
+    recommended_job = JobListSerializer(read_only=True, allow_null=True)
 
     class Meta:
         model = Chat
-        fields = ['uuid', 'title', 'job', 'completed', 'messages']
-        read_only_fields = ['uuid', 'title', 'completed']
+        fields = ['uuid', 'title', 'job', 'completed', 'feedback', 'recommended_job', 'messages']
+        read_only_fields = ['uuid', 'title', 'completed', 'feedback', 'recommended_job']
+
+    def get_messages(self, obj):
+        """Retorna apenas mensagens visíveis (exclui system)."""
+        messages = obj.messages.exclude(role='system')
+        return MessageSerializer(messages, many=True).data
 
 
 class ChatListSerializer(serializers.ModelSerializer):
@@ -63,9 +69,12 @@ class ChatListSerializer(serializers.ModelSerializer):
 
 
 class InterviewCreateSerializer(serializers.Serializer):
-    job_id = serializers.IntegerField(required=True)
+    job_id = serializers.IntegerField(required=False, allow_null=True)
+    candidate_name = serializers.CharField(required=False, allow_blank=True, max_length=100)
 
     def validate_job_id(self, value):
+        if value is None:
+            return None
         from jobs.models import Job
         if not Job.objects.filter(id=value).exists():
             raise serializers.ValidationError("Curso não encontrado")

@@ -33,7 +33,9 @@ from .serializers import (
 class InterviewCreateAPIView(APIView):
     """
     POST /api/v1/interviews/
-    Cria uma nova entrevista (chat) para um curso.
+    Cria uma nova entrevista (chat).
+    - Se job_id for fornecido: entrevista específica para o curso
+    - Se job_id não for fornecido: teste de aptidão geral
     Rate limit: 10 entrevistas por hora por IP.
     """
     permission_classes = [AllowAny]
@@ -48,14 +50,20 @@ class InterviewCreateAPIView(APIView):
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
-        job_id = serializer.validated_data['job_id']
-        job = Job.objects.get(id=job_id)
+        job_id = serializer.validated_data.get('job_id')
+        candidate_name = serializer.validated_data.get('candidate_name')
 
-        chat = Chat.objects.create(job=job)
+        if job_id:
+            job = Job.objects.get(id=job_id)
+            chat = Chat.objects.create(job=job, candidate_name=candidate_name)
+            message = "Entrevista criada com sucesso"
+        else:
+            chat = Chat.objects.create(candidate_name=candidate_name)
+            message = "Teste de aptidão criado com sucesso"
 
         chat_serializer = ChatSerializer(chat)
         return success_response(
-            message="Entrevista criada com sucesso",
+            message=message,
             data=chat_serializer.data,
             status_code=status.HTTP_201_CREATED
         )
